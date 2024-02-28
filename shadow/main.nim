@@ -3,7 +3,7 @@ import libp2p, libp2p/protocols/pubsub/rpc/messages
 import libp2p/muxers/mplex/lpchannel, libp2p/protocols/ping
 import chronos
 import sequtils, hashes, math, metrics
-from times import getTime, toUnix, fromUnix, `-`, initTime, `$`, inMilliseconds
+from times import getTime, toUnix, fromUnix, `-`, initTime, `$`, inMilliseconds, Duration
 from nativesockets import getHostname
 
 const chunks = 1
@@ -65,6 +65,13 @@ proc main {.async.} =
     firstMessageDeliveriesDecay: 0.9
   )
 
+  proc messageLatency(data: seq[byte]) : times.Duration =
+    let
+      sentMoment = nanoseconds(int64(uint64.fromBytesLE(data)))
+      sentNanosecs = nanoseconds(sentMoment - seconds(sentMoment.seconds))
+      sentDate = initTime(sentMoment.seconds, sentNanosecs)
+    result = getTime() - sentDate
+
   var messagesChunks: CountTable[uint64]
   proc messageHandler(topic: string, data: seq[byte]) {.async.} =
     let sentUint = uint64.fromBytesLE(data)
@@ -74,12 +81,8 @@ proc main {.async.} =
 
     messagesChunks.inc(sentUint)
     if messagesChunks[sentUint] < chunks: return
-    let
-      sentMoment = nanoseconds(int64(uint64.fromBytesLE(data)))
-      sentNanosecs = nanoseconds(sentMoment - seconds(sentMoment.seconds))
-      sentDate = initTime(sentMoment.seconds, sentNanosecs)
-      diff = getTime() - sentDate
-    echo sentUint, " milliseconds: ", diff.inMilliseconds()
+
+    echo sentUint, " milliseconds: ", messageLatency(data).inMilliseconds()
 
 
   var
