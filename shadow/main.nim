@@ -1,6 +1,6 @@
 import stew/endians2, stew/byteutils, tables, strutils, os
-import ../../nim-libp2p/libp2p, ../../nim-libp2p/libp2p/protocols/pubsub/rpc/messages
-import ../../nim-libp2p/libp2p/muxers/mplex/lpchannel, ../../nim-libp2p/libp2p/protocols/ping
+import libp2p, libp2p/protocols/pubsub/rpc/messages
+import libp2p/muxers/mplex/lpchannel, libp2p/protocols/ping
 import chronos
 import sequtils, hashes, math, metrics
 from times import getTime, toUnix, fromUnix, `-`, initTime, `$`, inMilliseconds
