@@ -1,0 +1,3 @@
+[submodule "shadow/vendor/nim-libp2p"]
+	path = shadow/vendor/nim-libp2p
+	url = https://github.com/status-im/nim-libp2p
