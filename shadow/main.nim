@@ -6,14 +6,21 @@ import sequtils, hashes, math, metrics
 from times import getTime, toUnix, fromUnix, `-`, initTime, `$`, inMilliseconds, Duration
 from nativesockets import getHostname
 
-const chunks = 1
-
 proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
   return ok(($m.data.hash).toBytes())
 
 proc main {.async.} =
   const
+    numRows = 16
+    numCols = 16
+    custodyRows = 1
+    custodyCols = 1
+    blocksize = 2^19
+    sendRows = true
+    sendCols = true
     printGossipSubStats = false
+  const
+    interest = numRows * custodyCols + (numCols-custodyCols) * custodyRows
   let
     hostname = getHostname()
     myId = parseInt(hostname[4..^1])
@@ -67,6 +74,23 @@ proc main {.async.} =
     firstMessageDeliveriesDecay: 0.9
   )
 
+  var rows = toSeq(0..<numRows)
+  if not isPublisher:
+    rng.shuffle(rows)
+    rows = rows[0..<custodyRows]
+
+  var cols = toSeq(0..<numCols)
+  if not isPublisher:
+    rng.shuffle(cols)
+    cols = cols[0..<custodyCols]
+
+
+  proc dasTopicR(row: int) : string =
+    "R" & $row
+
+  proc dasTopicC(col: int) : string =
+    "C" & $col
+
   proc messageLatency(data: seq[byte]) : times.Duration =
     let
       sentMoment = nanoseconds(int64(uint64.fromBytesLE(data)))
@@ -74,18 +98,33 @@ proc main {.async.} =
       sentDate = initTime(sentMoment.seconds, sentNanosecs)
     result = getTime() - sentDate
 
-  var messagesChunks: CountTable[uint64]
+  var messagesChunks = initTable[uint64, CountTable[(byte, byte)]]()
+  var messagesChunkCount = initCountTable[uint64]()
   proc messageHandler(topic: string, data: seq[byte]) {.async.} =
-    let sentUint = uint64.fromBytesLE(data)
+    let
+      sentUint = uint64.fromBytesLE(data)
+      row = data[10]
+      col = data[12]
     # warm-up
     if sentUint < 1000000: return
     #if isAttacker: return
 
-    messagesChunks.inc(sentUint)
-    if messagesChunks[sentUint] < chunks: return
+    if not messagesChunks.hasKey(sentUint):
+      messagesChunks[sentUint] = initCountTable[(byte, byte)]()
 
+    messagesChunks[sentUint].inc((row,col))
+    if messagesChunks[sentUint][(row,col)] > 1:
+      echo sentUint, " DUP ms: ", messageLatency(data).inMilliseconds(), " row: ", row, " column: ", col
+      return
+    else:
+      messagesChunkCount.inc(sentUint)
+      echo "arrived: ", messagesChunkCount[sentUint], " of ", interest
+      echo sentUint, " ARR ms: ", messageLatency(data).inMilliseconds(), " row: ", row, " column: ", col
+
+    if messagesChunkCount[sentUint] < interest: return
+
+    echo sentUint, " BLK ms: ", messageLatency(data).inMilliseconds(), " block arrived"
     echo sentUint, " milliseconds: ", messageLatency(data).inMilliseconds()
-
 
   var
     startOfTest: Moment
@@ -96,8 +135,14 @@ proc main {.async.} =
 
     return ValidationResult.Accept
 
-  gossipSub.subscribe("test", messageHandler)
-  gossipSub.addValidator(["test"], messageValidator)
+  for row in rows:
+    gossipSub.subscribe(dasTopicR(row), messageHandler)
+    gossipSub.addValidator([dasTopicR(row)], messageValidator)
+
+  for col in cols:
+    gossipSub.subscribe(dasTopicC(col), messageHandler)
+    gossipSub.addValidator([dasTopicC(col)], messageValidator)
+
   switch.mount(gossipSub)
   switch.mount(pingProtocol)
   await switch.start()
@@ -143,7 +188,13 @@ proc main {.async.} =
   #startOfTest = Moment.now() + milliseconds(warmupMessages * maxMessageDelay div 2)
 
   await sleepAsync(10.seconds)
-  echo "Mesh size: ", gossipSub.mesh.getOrDefault("test").len
+  # echo "Mesh size: ", gossipSub.mesh.getOrDefault("test").len
+  for row in rows:
+    let topic = dasTopicR(row)
+    echo "Mesh size ", topic, " ", gossipSub.mesh.getOrDefault(topic).len
+  for col in cols:
+    let topic = dasTopicC(col)
+    echo "Mesh size ", topic, " ", gossipSub.mesh.getOrDefault(topic).len
 
   for msg in 0 ..< 10:#client.param(int, "message_count"):
     await sleepAsync(12.seconds)
@@ -152,12 +203,18 @@ proc main {.async.} =
       let
         now = getTime()
         nowInt = seconds(now.toUnix()) + nanoseconds(times.nanosecond(now))
-      #var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](500_000 div chunks)
-      var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](50)
-      #echo "sending ", uint64(nowInt.nanoseconds)
-      for chunk in 0..<chunks:
-        nowBytes[10] = byte(chunk)
-        doAssert((await gossipSub.publish("test", nowBytes)) > 0)
+      var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](blocksize div (numRows*numCols))
+      echo "sending ", uint64(nowInt.nanoseconds)
+
+      for row in 0..<numRows:
+        for col in 0..<numCols:
+          nowBytes[10] = byte(row)
+          nowBytes[12] = byte(col)
+          echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
+          if sendRows:
+            doAssert((await gossipSub.publish(dasTopicR(row), nowBytes)) > 0)
+          if sendCols:
+            doAssert((await gossipSub.publish(dasTopicC(col), nowBytes)) > 0)
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
   #echo "DUPS: ", libp2p_gossipsub_duplicate.value(), " / ", libp2p_gossipsub_received.value()
