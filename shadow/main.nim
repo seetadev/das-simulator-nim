@@ -18,6 +18,7 @@ proc main {.async.} =
     blocksize = 2^19
     sendRows = true
     sendCols = true
+    crossForward = false
     printGossipSubStats = false
   const
     interest = numRows * custodyCols + (numCols-custodyCols) * custodyRows
@@ -91,6 +92,9 @@ proc main {.async.} =
   proc dasTopicC(col: int) : string =
     "C" & $col
 
+  proc isTopicR(topic: string) : bool =
+    topic[0] == 'R'
+
   proc messageLatency(data: seq[byte]) : times.Duration =
     let
       sentMoment = nanoseconds(int64(uint64.fromBytesLE(data)))
@@ -105,12 +109,26 @@ proc main {.async.} =
       sentUint = uint64.fromBytesLE(data)
       row = data[10]
       col = data[12]
+      roc = topic.isTopicR # Row or Column
+
     # warm-up
     if sentUint < 1000000: return
     #if isAttacker: return
 
     if not messagesChunks.hasKey(sentUint):
       messagesChunks[sentUint] = initCountTable[(byte, byte)]()
+
+    if crossForward:
+      if roc:
+        if int(col) in cols:
+          echo "crossing to col: ", col
+          var rocData = data
+          discard gossipSub.publish(dasTopicC(int(col)), rocData)
+      else:
+        if int(row) in rows:
+          echo "crossing to row: ", row
+          var rocData = data
+          discard gossipSub.publish(dasTopicR(int(row)), rocData)
 
     messagesChunks[sentUint].inc((row,col))
     if messagesChunks[sentUint][(row,col)] > 1:
