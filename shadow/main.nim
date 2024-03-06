@@ -212,9 +212,9 @@ proc main {.async.} =
           nowBytes[12] = byte(col)
           echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
           if sendRows:
-            doAssert((await gossipSub.publish(dasTopicR(row), nowBytes)) > 0)
+            discard await gossipSub.publish(dasTopicR(row), nowBytes)
           if sendCols:
-            doAssert((await gossipSub.publish(dasTopicC(col), nowBytes)) > 0)
+            discard await gossipSub.publish(dasTopicC(col), nowBytes)
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
   #echo "DUPS: ", libp2p_gossipsub_duplicate.value(), " / ", libp2p_gossipsub_received.value()
