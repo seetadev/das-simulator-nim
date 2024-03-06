@@ -123,11 +123,13 @@ proc main {.async.} =
         if int(col) in cols:
           echo "crossing to col: ", col
           var rocData = data
+          rocData[14] = 1
           discard gossipSub.publish(dasTopicC(int(col)), rocData)
       else:
         if int(row) in rows:
           echo "crossing to row: ", row
           var rocData = data
+          rocData[14] = 0
           discard gossipSub.publish(dasTopicR(int(row)), rocData)
 
     messagesChunks[sentUint].inc((row,col))
@@ -230,8 +232,10 @@ proc main {.async.} =
           nowBytes[12] = byte(col)
           echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
           if sendRows:
+            nowBytes[14] = 0
             discard gossipSub.publish(dasTopicR(row), nowBytes)
           if sendCols:
+            nowBytes[14] = 1
             discard gossipSub.publish(dasTopicC(col), nowBytes)
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
