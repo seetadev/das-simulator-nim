@@ -12,6 +12,8 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
   return ok(($m.data.hash).toBytes())
 
 proc main {.async.} =
+  const
+    printGossipSubStats = false
   let
     hostname = getHostname()
     myId = parseInt(hostname[4..^1])
@@ -159,12 +161,14 @@ proc main {.async.} =
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
   #echo "DUPS: ", libp2p_gossipsub_duplicate.value(), " / ", libp2p_gossipsub_received.value()
-  #requires exporting counters from GossipSub.nim
-  echo "statcounters: dup_during_validation ", libp2p_gossipsub_duplicate_during_validation.value(),
-       "\tidontwant_saves ", libp2p_gossipsub_idontwant_saved_messages.value(),
-       #"gossip optimization saves ", libp2p_gossipsub_saved_bytes.value(),
-       "\tdup_received ", libp2p_gossipsub_duplicate.value(),
-       "\tUnique_msg_received ", libp2p_gossipsub_received.value(),
-       "\tStaggered_Saves ", libp2p_gossipsub_staggerSave.value(),
-       "\tDontWant_IN_Stagger ", libp2p_gossipsub_staggerDontWantSave.value()
+
+  when printGossipSubStats:
+    #requires exporting counters from GossipSub.nim
+    echo "statcounters: dup_during_validation ", libp2p_gossipsub_duplicate_during_validation.value(),
+        "\tidontwant_saves ", libp2p_gossipsub_idontwant_saved_messages.value(),
+        #"gossip optimization saves ", libp2p_gossipsub_saved_bytes.value(),
+        "\tdup_received ", libp2p_gossipsub_duplicate.value(),
+        "\tUnique_msg_received ", libp2p_gossipsub_received.value(),
+        "\tStaggered_Saves ", libp2p_gossipsub_staggerSave.value(),
+        "\tDontWant_IN_Stagger ", libp2p_gossipsub_staggerDontWantSave.value()
 waitFor(main())
