@@ -26,6 +26,8 @@ proc main {.async.} =
     publisherMaxCopies = 1
     publisherShufflePeers = true
     publisherSendInRandomOrder = false
+    publisherSendRowCount = numRows
+    publisherSendColCount = numCols
     repairOnTheFly = true
     repairForward = false
     repairCrossForward = true
@@ -277,8 +279,8 @@ proc main {.async.} =
       echo "sending ", uint64(nowInt.nanoseconds)
 
       iterator segmentItRC() : (int, int) =
-        for row in 0..<numRows:
-          for col in 0..<numCols:
+        for row in 0..<publisherSendRowCount:
+          for col in 0..<publisherSendColCount:
             yield (row, col)
 
       iterator segmentIt() : (int, int) {.inline.} =
