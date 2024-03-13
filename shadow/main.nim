@@ -12,7 +12,7 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
 
 proc main {.async.} =
   const
-    blocksize = 2^21  # size of DAS block, after EC, in bytes
+    blocksize = 2^21  # size of DAS block, before EC, in bytes
     numRows = 64      # number of Rows after EC
     numRowsK = 32     # number of Rows before EC
     numCols = 128
@@ -276,7 +276,7 @@ proc main {.async.} =
       let
         now = getTime()
         nowInt = seconds(now.toUnix()) + nanoseconds(times.nanosecond(now))
-      var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](blocksize div (numRows*numCols))
+      var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](blocksize div (numRowsK*numColsK))
       echo "sending ", uint64(nowInt.nanoseconds)
 
       iterator segmentItRC() : (int, int) =
