@@ -118,19 +118,25 @@ proc main {.async.} =
     if not messagesChunks.hasKey(sentUint):
       messagesChunks[sentUint] = initCountTable[(int, int)]()
 
+    proc sendOnCol(col: int, data: seq[byte]) =
+          var rocData = data
+          rocData[14] = 1
+          discard gossipSub.publish(dasTopicC(int(col)), rocData)
+
+    proc sendOnRow(row: int, data: seq[byte]) =
+          var rocData = data
+          rocData[14] = 0
+          discard gossipSub.publish(dasTopicR(int(row)), rocData)
+
     if crossForward:
       if roc:
         if int(col) in cols:
           echo "crossing to col: ", col
-          var rocData = data
-          rocData[14] = 1
-          discard gossipSub.publish(dasTopicC(int(col)), rocData)
+          sendOnCol(col, data)
       else:
         if int(row) in rows:
           echo "crossing to row: ", row
-          var rocData = data
-          rocData[14] = 0
-          discard gossipSub.publish(dasTopicR(int(row)), rocData)
+          sendOnRow(row, data)
 
     messagesChunks[sentUint].inc((row,col))
     if messagesChunks[sentUint][(row,col)] > 1:
