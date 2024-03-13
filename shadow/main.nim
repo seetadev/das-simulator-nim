@@ -22,6 +22,8 @@ proc main {.async.} =
     sendCols = true
     crossForward = false
     printGossipSubStats = false
+    publisherMaxCopies = 1
+    publisherShufflePeers = true
     repairOnTheFly = true
     repairForward = false
     repairCrossForward = true
@@ -279,10 +281,10 @@ proc main {.async.} =
           echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
           if sendRows:
             nowBytes[14] = 0
-            discard gossipSub.publish(dasTopicR(row), nowBytes)
+            discard gossipSub.publish(dasTopicR(row), nowBytes, publisherMaxCopies, publisherShufflePeers)
           if sendCols:
             nowBytes[14] = 1
-            discard gossipSub.publish(dasTopicC(col), nowBytes)
+            discard gossipSub.publish(dasTopicC(col), nowBytes, publisherMaxCopies, publisherShufflePeers)
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
   #echo "DUPS: ", libp2p_gossipsub_duplicate.value(), " / ", libp2p_gossipsub_received.value()
