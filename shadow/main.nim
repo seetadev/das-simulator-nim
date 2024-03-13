@@ -38,7 +38,7 @@ proc main {.async.} =
     hostname = getHostname()
     myId = parseInt(hostname[4..^1])
     #publisherCount = client.param(int, "publisher_count")
-    publisherCount = 10
+    publisherCount = 1
     isPublisher = myId <= publisherCount
     #isAttacker = (not isPublisher) and myId - publisherCount <= client.param(int, "attacker_count")
     isAttacker = false
