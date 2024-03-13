@@ -11,8 +11,10 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
 
 proc main {.async.} =
   const
-    numRows = 16
-    numCols = 16
+    numRows = 64
+    numRowsK = 32
+    numCols = 128
+    numColsK = 64
     custodyRows = 1
     custodyCols = 1
     blocksize = 2^19
@@ -20,6 +22,9 @@ proc main {.async.} =
     sendCols = true
     crossForward = false
     printGossipSubStats = false
+    repairOnTheFly = true
+    repairForward = false
+    repairCrossForward = true
   const
     interest = numRows * custodyCols + (numCols-custodyCols) * custodyRows
   let
@@ -146,6 +151,41 @@ proc main {.async.} =
       messagesChunkCount.inc(sentUint)
       echo "arrived: ", messagesChunkCount[sentUint], " of ", interest
       echo sentUint, " ARR ms: ", messageLatency(data).inMilliseconds(), " row: ", row, " column: ", col
+
+    proc hasInRow(row:int) : int =
+      for i in 0 ..< numCols :
+        if messagesChunks[sentUint][(row, i)] >= 1:
+          result += 1
+
+    proc hasInCol(col:int) : int =
+      for i in 0 ..< numRows :
+        if messagesChunks[sentUint][(i, col)] >= 1:
+          result += 1
+
+    if repairOnTheFly:
+      if int(row) in rows:
+        if hasInRow(row) >= numColsK:
+          for i in 0 ..< numCols :
+            if messagesChunks[sentUint][(row, i)] == 0:
+              messagesChunks[sentUint][(row, i)] = 1
+              messagesChunkCount.inc(sentUint)
+              if repairCrossForward:
+                if int(col) in cols:
+                  sendOnCol(col, data)
+              if repairForward:
+                sendOnRow(row, data)
+
+      if int(col) in cols:
+        if hasInCol(col) >= numRowsK:
+          for i in 0 ..< numRows :
+            if messagesChunks[sentUint][(i, col)] == 0:
+              messagesChunks[sentUint][(i, col)] = 1
+              messagesChunkCount.inc(sentUint)
+              if repairCrossForward:
+                if int(row) in rows:
+                  sendOnRow(row, data)
+              if repairForward:
+                sendOnCol(col, data)
 
     if messagesChunkCount[sentUint] < interest: return
 
