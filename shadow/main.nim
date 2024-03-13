@@ -2,6 +2,7 @@ import stew/endians2, stew/byteutils, tables, strutils, os
 import vendor/nim-libp2p/libp2p, vendor/nim-libp2p/libp2p/protocols/pubsub/rpc/messages
 import vendor/nim-libp2p/libp2p/muxers/mplex/lpchannel, vendor/nim-libp2p/libp2p/protocols/ping
 import chronos
+import random # need since rng leads to "Error: internal error: could not find env param for segmentItRandom"
 import sequtils, hashes, math, metrics
 from times import getTime, toUnix, fromUnix, `-`, initTime, `$`, inMilliseconds, Duration
 from nativesockets import getHostname
@@ -24,6 +25,7 @@ proc main {.async.} =
     printGossipSubStats = false
     publisherMaxCopies = 1
     publisherShufflePeers = true
+    publisherSendInRandomOrder = false
     repairOnTheFly = true
     repairForward = false
     repairCrossForward = true
@@ -274,8 +276,23 @@ proc main {.async.} =
       var nowBytes = @(toBytesLE(uint64(nowInt.nanoseconds))) & newSeq[byte](blocksize div (numRows*numCols))
       echo "sending ", uint64(nowInt.nanoseconds)
 
-      for row in 0..<numRows:
-        for col in 0..<numCols:
+      iterator segmentItRC() : (int, int) =
+        for row in 0..<numRows:
+          for col in 0..<numCols:
+            yield (row, col)
+
+      iterator segmentIt() : (int, int) {.inline.} =
+        type segmentIdx = tuple[row: int, col: int]
+        var segments : seq[segmentIdx]
+        for rc in segmentItRC():
+            segments.add(rc)
+        if publisherSendInRandomOrder:
+          # rnd.shuffle(segments) # TODO: this leads to "Error: internal error: could not find env param"
+          random.shuffle(segments)
+        for rc in segments:
+          yield rc
+
+      for (row, col) in segmentIt():
           nowBytes[10] = byte(row)
           nowBytes[12] = byte(col)
           echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
