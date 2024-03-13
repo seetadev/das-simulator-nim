@@ -12,24 +12,24 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
 
 proc main {.async.} =
   const
-    blocksize = 2^21  # size of DAS block, before EC, in bytes
-    numRows = 64      # number of Rows after EC
-    numRowsK = 32     # number of Rows before EC
+    blocksize = 2^20  # size of DAS block, before EC, in bytes
+    numRows = 1      # number of Rows after EC
+    numRowsK = 1     # number of Rows before EC
     numCols = 128
     numColsK = 64
-    custodyRows = 1   # rows to custody (=topics to sbscribe)
-    custodyCols = 1
-    sendRows = true   # whether the publisher send out on row topics
+    custodyRows = 0   # rows to custody (=topics to sbscribe)
+    custodyCols = 4
+    sendRows = false   # whether the publisher send out on row topics
     sendCols = true
     crossForward = false   # whether to relay received segments in the other dimension (row->col, col->row)
-    publisherMaxCopies = 1  # how many copies of each segment to send out (see shufflepeers as well)
-    publisherShufflePeers = true # how to select peers to send to. false: always the same; true: randomize
+    publisherMaxCopies = int.high  # how many copies of each segment to send out (see shufflepeers as well)
+    publisherShufflePeers = false # how to select peers to send to. false: always the same; true: randomize
     publisherSendInRandomOrder = false  # whether to radomize segment order when publishing
     publisherSendRowCount = numRows # numRows: send whole row; numRowsK: send only half row
     publisherSendColCount = numCols
-    repairOnTheFly = true # whether to repar as soon as a whole K arrived (both row and column)
+    repairOnTheFly = false # whether to repar as soon as a whole K arrived (both row and column)
     repairForward = false # whether to forward repaired chunks on the same line
-    repairCrossForward = true # wheher to forward repaired segments on the other dimension
+    repairCrossForward = false # wheher to forward repaired segments on the other dimension
 
     printGossipSubStats = false
   const
