@@ -102,13 +102,13 @@ proc main {.async.} =
       sentDate = initTime(sentMoment.seconds, sentNanosecs)
     result = getTime() - sentDate
 
-  var messagesChunks = initTable[uint64, CountTable[(byte, byte)]]()
+  var messagesChunks = initTable[uint64, CountTable[(int, int)]]()
   var messagesChunkCount = initCountTable[uint64]()
   proc messageHandler(topic: string, data: seq[byte]) {.async.} =
     let
       sentUint = uint64.fromBytesLE(data)
-      row = data[10]
-      col = data[12]
+      row = data[10].int # TODO: use 2 bytes
+      col = data[12].int
       roc = topic.isTopicR # Row or Column
 
     # warm-up
@@ -116,7 +116,7 @@ proc main {.async.} =
     #if isAttacker: return
 
     if not messagesChunks.hasKey(sentUint):
-      messagesChunks[sentUint] = initCountTable[(byte, byte)]()
+      messagesChunks[sentUint] = initCountTable[(int, int)]()
 
     if crossForward:
       if roc:
