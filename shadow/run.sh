@@ -1,17 +1,19 @@
 #!/bin/sh
 
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <runs> <FastNodes> <SlowNodes>"
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 <runs> <FastNodes> <SlowNodes> [PacketLoss(float0..1)]"
     exit 1
 fi
 
 runs="$1"			#number of simulation runs
 nodes1="$2"			#number of nodes in class 1
 nodes2="$3"			#number of nodes in class 2
+packet_loss=${4:-0.0}
 nodes=$(($nodes1 + $nodes2))
 shadow_file="shadow.yaml"	
 sed -i '/*FastHost/q' "$shadow_file"
 sed -E -i "s/\"PEERS\": \"[0-9]+\"/\"PEERS\": \"$nodes\"/" "$shadow_file"
+sed -E -i "s/packet_loss [0-9\.]+/packet_loss $packet_loss/" "$shadow_file"
 
 counter=2
 while [ $counter -le $nodes1 ]; do
