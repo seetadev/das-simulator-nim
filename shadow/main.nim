@@ -11,6 +11,9 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
   return ok(($m.data.hash).toBytes())
 
 proc main {.async.} =
+  # make sure random is random
+  randomize()
+
   const
     blocksize = 2^21  # size of DAS block, before EC, in bytes
     numRows = 64      # number of Rows after EC
