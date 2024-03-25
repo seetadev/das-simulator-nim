@@ -114,30 +114,31 @@ proc main {.async.} =
       sentDate = initTime(sentMoment.seconds, sentNanosecs)
     result = getTime() - sentDate
 
-  var messagesChunks = initTable[uint64, CountTable[(int, int)]]()
-  var messagesChunkCount = initCountTable[uint64]()
+  var messagesChunks = initTable[int, CountTable[(int, int)]]()
+  var messagesChunkCount = initCountTable[int]()
   proc messageHandler(topic: string, data: seq[byte]) {.async.} =
     let
       sentUint = uint64.fromBytesLE(data)
-      row = data[10].int # TODO: use 2 bytes
-      col = data[12].int
+      msgId = data[10].int
+      row = data[12].int # TODO: use 2 bytes
+      col = data[14].int
       roc = topic.isTopicR # Row or Column
 
     # warm-up
     if sentUint < 1000000: return
     #if isAttacker: return
 
-    if not messagesChunks.hasKey(sentUint):
-      messagesChunks[sentUint] = initCountTable[(int, int)]()
+    if not messagesChunks.hasKey(msgId):
+      messagesChunks[msgId] = initCountTable[(int, int)]()
 
     proc sendOnCol(col: int, data: seq[byte]) =
           var rocData = data
-          rocData[14] = 1
+          rocData[16] = 1
           discard gossipSub.publish(dasTopicC(int(col)), rocData)
 
     proc sendOnRow(row: int, data: seq[byte]) =
           var rocData = data
-          rocData[14] = 0
+          rocData[16] = 0
           discard gossipSub.publish(dasTopicR(int(row)), rocData)
 
     if crossForward:
@@ -150,32 +151,32 @@ proc main {.async.} =
           echo "crossing to row: ", row
           sendOnRow(row, data)
 
-    messagesChunks[sentUint].inc((row,col))
-    if messagesChunks[sentUint][(row,col)] > 1:
+    messagesChunks[msgId].inc((row,col))
+    if messagesChunks[msgId][(row,col)] > 1:
       echo sentUint, " DUP ms: ", messageLatency(data).inMilliseconds(), " row: ", row, " column: ", col
       return
     else:
-      messagesChunkCount.inc(sentUint)
-      echo "arrived: ", messagesChunkCount[sentUint], " of ", interest
+      messagesChunkCount.inc(msgId)
+      echo "arrived: ", messagesChunkCount[msgId], " of ", interest
       echo sentUint, " ARR ms: ", messageLatency(data).inMilliseconds(), " row: ", row, " column: ", col
 
     proc hasInRow(row:int) : int =
       for i in 0 ..< numCols :
-        if messagesChunks[sentUint][(row, i)] >= 1:
+        if messagesChunks[msgId][(row, i)] >= 1:
           result += 1
 
     proc hasInCol(col:int) : int =
       for i in 0 ..< numRows :
-        if messagesChunks[sentUint][(i, col)] >= 1:
+        if messagesChunks[msgId][(i, col)] >= 1:
           result += 1
 
     if repairOnTheFly:
       if int(row) in rows:
         if hasInRow(row) >= numColsK:
           for i in 0 ..< numCols :
-            if messagesChunks[sentUint][(row, i)] == 0:
-              messagesChunks[sentUint][(row, i)] = 1
-              messagesChunkCount.inc(sentUint)
+            if messagesChunks[msgId][(row, i)] == 0:
+              messagesChunks[msgId][(row, i)] = 1
+              messagesChunkCount.inc(msgId)
               if repairCrossForward:
                 if int(col) in cols:
                   sendOnCol(col, data)
@@ -185,16 +186,16 @@ proc main {.async.} =
       if int(col) in cols:
         if hasInCol(col) >= numRowsK:
           for i in 0 ..< numRows :
-            if messagesChunks[sentUint][(i, col)] == 0:
-              messagesChunks[sentUint][(i, col)] = 1
-              messagesChunkCount.inc(sentUint)
+            if messagesChunks[msgId][(i, col)] == 0:
+              messagesChunks[msgId][(i, col)] = 1
+              messagesChunkCount.inc(msgId)
               if repairCrossForward:
                 if int(row) in rows:
                   sendOnRow(row, data)
               if repairForward:
                 sendOnCol(col, data)
 
-    if messagesChunkCount[sentUint] < interest: return
+    if messagesChunkCount[msgId] < interest: return
 
     echo sentUint, " BLK ms: ", messageLatency(data).inMilliseconds(), " block arrived"
     echo sentUint, " milliseconds: ", messageLatency(data).inMilliseconds()
@@ -296,14 +297,15 @@ proc main {.async.} =
           yield rc
 
       for (row, col) in segmentIt():
-          nowBytes[10] = byte(row)
-          nowBytes[12] = byte(col)
+          nowBytes[10] = byte(msg)
+          nowBytes[12] = byte(row)
+          nowBytes[14] = byte(col)
           echo "sending ", uint64(nowInt.nanoseconds), "r", row, "c", col
           if sendRows:
-            nowBytes[14] = 0
+            nowBytes[16] = 0
             discard gossipSub.publish(dasTopicR(row), nowBytes, publisherMaxCopies, publisherShufflePeers)
           if sendCols:
-            nowBytes[14] = 1
+            nowBytes[16] = 1
             discard gossipSub.publish(dasTopicC(col), nowBytes, publisherMaxCopies, publisherShufflePeers)
 
   #echo "BW: ", libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "in"]) + libp2p_protocols_bytes.value(labelValues=["/meshsub/1.1.0", "out"])
