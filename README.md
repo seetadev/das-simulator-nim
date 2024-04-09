@@ -1,13 +1,15 @@
 # Data Availability Sampling (DAS) Simulator - Nim edition
 
+Author: Csaba Kiraly, [Codex team](https://codex.storage/)
+
 The goal of the simulator is to study and develop techniques for DAS (Data Availabilty Sampling). The simulator is composed of
-- the Shadow Network simulator: open-source framework to run real application code 
+- the Shadow Network Simulator: open-source framework to run real application code over a simulated network
 - nim-libp2p: an experimental version of nim-libp2p code for DAS
-- custom DAS application logic 
+- custom DAS application logic
 
 This is our second simulator, the first being written in Python and available in the [DAS Research repo](https://github.com/codex-storage/das-research).
 
-The two  have different levels of abstraction and serve different purposes:
+The two simulators have different levels of abstraction and serve different purposes:
 - the [Python simulator]((https://github.com/codex-storage/das-research)) focuses on abstraction, scale, and ease of modification;
 - this one, written in Nim, is much closer to a real implementation.
 
@@ -15,7 +17,7 @@ Both simulators aim to serve the development and comparative analysis of differe
 
 ## Acknowledgements
 
-The [Shadow Network Simulator](https://shadow.github.io/) is had originally been developed for the Tor project.
+The [Shadow Network Simulator](https://shadow.github.io/) was originally developed for the [Tor project](https://www.torproject.org/).
 
 [nim-libp2p](https://github.com/vacp2p/nim-libp2p) is in development and production use by the [Nimbus team](https://nimbus.team/).
 
