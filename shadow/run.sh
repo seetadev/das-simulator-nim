@@ -10,8 +10,9 @@ nodes1="$2"			#number of nodes in class 1
 nodes2="$3"			#number of nodes in class 2
 packet_loss=${4:-0.0}
 nodes=$(($nodes1 + $nodes2))
+shadow_file_base="shadow.yaml.template"
 shadow_file="shadow.yaml"	
-sed -i '/*FastHost/q' "$shadow_file"
+sed '/*FastHost/q' "$shadow_file_base" >"$shadow_file"
 sed -E -i "s/\"PEERS\": \"[0-9]+\"/\"PEERS\": \"$nodes\"/" "$shadow_file"
 sed -E -i "s/packet_loss [0-9\.]+/packet_loss $packet_loss/" "$shadow_file"
 
