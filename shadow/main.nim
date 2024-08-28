@@ -12,13 +12,13 @@ proc msgIdProvider(m: Message): Result[MessageId, ValidationResult] =
 
 proc main {.async.} =
   const
-    blocksize = 2^20  # size of DAS block, before EC, in bytes
-    numRows = 8      # number of Rows after EC
-    numRowsK = 4     # number of Rows before EC
+    blocksize = 2^21  # size of DAS block, before EC, in bytes
+    numRows = 128      # number of Rows after EC
+    numRowsK = 64     # number of Rows before EC
     numCols = 128
     numColsK = 64
-    custodyRows = 2   # rows to custody (=topics to sbscribe)
-    custodyCols = 2
+    custodyRows = 4   # rows to custody (=topics to sbscribe)
+    custodyCols = 4
     sendRows = true   # whether the publisher send out on row topics
     sendCols = true
     crossForward = true   # whether to relay received segments in the other dimension (row->col, col->row)
