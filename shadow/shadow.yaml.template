@@ -5,7 +5,7 @@ general:
   progress: true
 
 experimental:
-  use_memory_manager: false
+  use_memory_manager: true
 
 x-constants:
   - &FastHost
