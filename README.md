@@ -15,7 +15,14 @@ Both simulators serve different purposes:
 
 By simulating DAS over Gossipsub in an Optimism context, this work contributes to the broader research on **scalable and efficient data availability solutions** for rollups and decentralized systems.  
 
+
+## Discussions in Libp2p Specifications Weekly Meetings
+
+   Please visit https://docs.google.com/document/d/14CYAxPjYqmujovC-vHPBSXqJVvfbtImV/edit?usp=sharing&ouid=109169901542566286145&rtpof=true&sd=true 
+
+
 ## Acknowledgements  
+
 The [Shadow Network Simulator](https://shadow.github.io/) was originally developed for the [Tor Project](https://www.torproject.org/).  
 
 [py-libp2p](https://github.com/libp2p/py-libp2p) is an experimental implementation of libp2p in Python.  
