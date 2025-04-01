@@ -1,4 +1,29 @@
-# Data Availability Sampling (DAS) Simulator - Nim edition
+# Optimism RetroPGF 7: Simulating Gossipsub Performance Metrics for DAS Using Shadow and py-libp2p  
+
+**Description:**  
+This project aims to simulate and analyze the performance of **Gossipsub** in the context of **Data Availability Sampling (DAS)** for Optimism using the **Shadow Network Simulator** and **libp2p**. The goal is to study network behavior, optimize message propagation efficiency, and evaluate DAS techniques under realistic conditions.  
+
+The simulator (in development) consists of:  
+- **Shadow Network Simulator** – An open-source framework to run real application code in a controlled network simulation environment.   
+- **Custom DAS application logic** – Implementing different sampling strategies to evaluate performance across network conditions.  
+
+This project builds on existing research in DAS and is inspired by the **Codex team’s** Nim-based DAS simulator. Unlike its Nim counterpart, this Python-based simulator focuses on ease of modification, rapid prototyping, and abstraction, making it useful for early-stage performance analysis and algorithm development.  
+
+Both simulators serve different purposes:  
+- The **Python-based simulator (py-libp2p + Shadow)** emphasizes ease of modification, flexibility, and rapid iteration for research.  
+- The **Nim-based simulator (nim-libp2p + Shadow)** is closer to real-world implementations and performance tuning.  
+
+By simulating DAS over Gossipsub in an Optimism context, this work contributes to the broader research on **scalable and efficient data availability solutions** for rollups and decentralized systems.  
+
+## Acknowledgements  
+The [Shadow Network Simulator](https://shadow.github.io/) was originally developed for the [Tor Project](https://www.torproject.org/).  
+
+[py-libp2p](https://github.com/libp2p/py-libp2p) is an experimental implementation of libp2p in Python.  
+
+This research is aligned with ongoing efforts in the Ethereum and Optimism ecosystems to enhance data availability and scalability.
+
+
+# Key Reference: Data Availability Sampling (DAS) Simulator - Nim edition
 
 Author: Csaba Kiraly, [Codex team](https://codex.storage/)
 
