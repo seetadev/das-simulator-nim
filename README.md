@@ -1,4 +1,4 @@
-# Optimism RetroPGF 7: Simulating Gossipsub Performance Metrics for DAS Using Shadow and libp2p  
+# Simulating Gossipsub Performance Metrics for DAS in Optimism Using Shadow and libp2p 
 
 **Description:**  
 This project aims to simulate and analyze the performance of **Gossipsub** in the context of **Data Availability Sampling (DAS)** for Optimism using the **Shadow Network Simulator** and **libp2p**. The goal is to study network behavior, optimize message propagation efficiency, and evaluate DAS techniques under realistic conditions.  
